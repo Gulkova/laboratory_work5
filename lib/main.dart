@@ -1,64 +1,125 @@
-// Copyright 2018 The Flutter team. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// #docregion ShakeCurve
+import 'dart:math';
 
+// #enddocregion ShakeCurve
+import 'package:flutter/animation.dart';
 import 'package:flutter/material.dart';
-import 'package:english_words/english_words.dart';
 
-void main() => runApp(MyApp());
+void main() => runApp(LogoApp());
 
-class MyApp extends StatelessWidget {
-  @override
+
+// #docregion diff
+class AnimatedLogo extends AnimatedWidget {
+  // Make the Tweens static because they don't change.
+  static final _opacityTween = Tween<double>(begin: 0.1, end: 1);
+  static final _sizeTween = Tween<double>(begin: 0, end: 300);
+
+  AnimatedLogo({Key key, Animation<double> animation})
+      : super(key: key, listenable: animation);
+
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Name Generator',
-      home: RandomWords(),
-    );
-  }
-}
 
-class RandomWords extends StatefulWidget {
-  @override
-  _RandomWordsState createState() => _RandomWordsState();
-}
-
-class _RandomWordsState extends State<RandomWords> {
-  final _suggestions = <WordPair>[];
-  final  _biggerFont = TextStyle(fontSize: 18.0);
-  Widget _buildSuggestions() {
-    return ListView.builder(
-        padding: EdgeInsets.all(16.0),
-        itemBuilder: /*1*/ (context, i) {
-          if (i.isOdd) return Divider(); /*2*/
-
-          final index = i ~/ 2; /*3*/
-          if (index >= _suggestions.length) {
-            _suggestions.addAll(generateWordPairs().take(10)); /*4*/
-          }
-          return _buildRow(_suggestions[index]);
-        });
-  }
-
-  Widget _buildRow(WordPair pair) {
-    return ListTile(
-      title: Text(
-        pair.asPascalCase,
-        style: _biggerFont,
-      ),
-    );
-  }
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Генератор слов'),
-        textTheme: TextTheme(
-            headline6:TextStyle (fontSize: 22.0, fontFamily: 'GothamPro',  fontWeight: FontWeight.bold, color: Color( 0xFF282336) )
+    final animation = listenable as Animation<double>;
+    return Center(
+      child: Opacity(
+        opacity: _opacityTween.evaluate(animation),
+        child: Container(
+          margin: EdgeInsets.symmetric(vertical: 10),
+          height: _sizeTween.evaluate(animation),
+          width: _sizeTween.evaluate(animation),
+          child:   Image.asset(
+            'lib/images/building.jpg'),
         ),
-        backgroundColor: Color(0xFFB0A3CB),
       ),
-      body: _buildSuggestions(),
     );
   }
+}
+
+class LogoApp extends StatefulWidget {
+  _LogoAppState createState() => _LogoAppState();
+}
+
+class _LogoAppState extends State<LogoApp> with SingleTickerProviderStateMixin {
+  Animation<double> animation;
+  AnimationController controller;
+  @override
+
+  void initState() {
+    super.initState();
+    // #docregion AnimationController, tweens
+    controller =
+        AnimationController(duration: const Duration(seconds: 2), vsync: this);
+    // #enddocregion AnimationController, tweens
+    animation = CurvedAnimation(parent: controller, curve: Curves.easeIn)
+      ..addStatusListener((status) {
+        if (status == AnimationStatus.completed) {
+          controller.reverse();
+        } else if (status == AnimationStatus.dismissed) {
+          controller.forward();
+        }
+      });
+    controller.forward();
+  }
+
+  @override
+  Widget build(BuildContext context) => AnimatedLogo(animation: animation);
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+}
+// #enddocregion diff
+
+// Extra code used only in the tutorial explanations. It is not used by the app.
+
+class UsedInTutorialTextOnly extends _LogoAppState {
+  UsedInTutorialTextOnly() {
+    // ignore: unused_local_variable
+    var animation, sizeAnimation, opacityAnimation, tween, colorTween;
+
+    // #docregion CurvedAnimation
+    animation = CurvedAnimation(parent: controller, curve: Curves.bounceOut);
+    // #enddocregion CurvedAnimation
+
+    // #docregion tweens
+    sizeAnimation = Tween<double>(begin: 0, end: 300).animate(controller);
+    opacityAnimation = Tween<double>(begin: 0.1, end: 1).animate(controller);
+    // #enddocregion tweens
+
+    // #docregion tween
+    tween = Tween<double>(begin: -200, end: 0);
+    // #enddocregion tween
+
+    // #docregion colorTween
+    colorTween = ColorTween(begin: Colors.transparent, end: Colors.black54);
+    // #enddocregion colorTween
+  }
+
+  usedInTutorialOnly1() {
+    // #docregion IntTween
+    AnimationController controller = AnimationController(
+        duration: const Duration(milliseconds: 500), vsync: this);
+    Animation<int> alpha = IntTween(begin: 0, end: 255).animate(controller);
+    // #enddocregion IntTween
+    return alpha;
+  }
+
+  usedInTutorialOnly2() {
+    // #docregion IntTween-curve
+    AnimationController controller = AnimationController(
+        duration: const Duration(milliseconds: 500), vsync: this);
+    final Animation curve =
+    CurvedAnimation(parent: controller, curve: Curves.bounceOut);
+    Animation<int> alpha = IntTween(begin: 0, end: 255).animate(curve);
+    // #enddocregion IntTween-curve
+    return alpha;
+  }
+}
+
+// #docregion ShakeCurve
+class ShakeCurve extends Curve {
+  @override
+  double transform(double t) => sin(t * pi * 2);
 }
